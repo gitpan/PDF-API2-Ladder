@@ -2,7 +2,7 @@ package PDF::API2::Ladder;
 
 use strict;
 use 5.008_005;
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 BEGIN {
     use PDF::API2;
@@ -78,8 +78,12 @@ sub new {
    $self->{line_height} = ($opt{'line_height'}) ? $opt{'line_height'} : 1/in;
    $self->{current_line_offset} = 0; # Lines are indexed starting at 1
 
+   # Fonts
+   $self->{font} = ($opt{'font'}) ? $opt{'font'} : 'Helvetica';
    $self->{font_size} = ($opt{'font_size'}) ? $opt{'font_size'} : 12/pt;
    $self->{lead} = ($opt{'lead'}) ? $opt{'lead'} : 7/pt;
+   $self->{font_color} = ($opt{'font_color'}) ? $opt{'font_color'} : 'black';
+   $self->{charspace} = (defined $opt{'charspace'}) ? $opt{'charspace'} : 0;
 
    # Setup
    if ($self->{file_name}) {
@@ -87,8 +91,6 @@ sub new {
    } else {
       $self->{pdf} = PDF::API2->new();
    }
-
-   $self->{font} = ($opt{'font'}) ? $opt{'font'} : 'Helvetica';
 
    # Declar the included fonts
    $self->{fonts} = {
@@ -123,7 +125,7 @@ sub new {
 
 #=item $pdf->add_rung %opts
 #
-#Creates a new line in the PDF.
+#Creates a new "rung" or line in the PDF. When provided with specific parameters, the text is changed accordingly.
 #
 #B<Example:>
 #
@@ -149,9 +151,12 @@ sub add_rung {
    my $oblique = ($options{'oblique'}) ? 1 : 0;
    my $indent = ($options{'indent'}) ? $options{'indent'} : 0;
    my $align = ($options{'align'}) ? $options{'align'} : 'left';
+   # Font parameters
    my $font_size = ($options{'font_size'}) ? $options{'font_size'} : $self->{font_size};
    my $fonts = ($options{'fonts'}) ? $options{'fonts'} : $self->{fonts};
    my $font = ($options{'font'}) ? $options{'font'} : $self->{font};
+   my $font_color = ($options{'font_color'}) ? $options{'font_color'} : $self->{font_color};
+   my $charspace = (defined $options{'charspace'}) ? $options{'charspace'} : $self->{charspace};
 
    my $line_height = ($options{'line_height'}) ? $options{'line_height'} : $self->{line_height};
    my $lead = ($options{'lead'}) ? $options{'lead'} : $self->{lead};
@@ -170,7 +175,8 @@ sub add_rung {
    if ($font_key eq '') { $font_key = 'Roman'; }
 
    $text_element->font( $fonts->{$font}{$font_key}, $font_size );
-   $text_element->fillcolor('black');
+   $text_element->fillcolor($font_color);
+   $text_element->charspace($charspace);
 
    my ( $endw, $ypos, $paragraph ) = text_block(
       $text_element,
@@ -218,6 +224,8 @@ sub add_blob {
    my $font = ($options{'font'}) ? $options{'font'} : $self->{font};
    my $bold = ($options{'bold'}) ? 1 : 0;
    my $oblique = ($options{'oblique'}) ? 1 : 0;
+   my $font_color = ($options{'font_color'}) ? $options{'font_color'} : $self->{font_color};
+   my $charspace = (defined $options{'charspace'}) ? $options{'charspace'} : $self->{charspace};
 
    my $line_height = ($options{'line_height'}) ? $options{'line_height'} : $self->{line_height};
    my $lead = ($options{'lead'}) ? $options{'lead'} : $self->{lead};
@@ -235,7 +243,8 @@ sub add_blob {
    if ($font_key eq '') { $font_key = 'Roman'; }
 
    $text_element->font( $fonts->{$font}{$font_key}, $self->{font_size} );
-   $text_element->fillcolor('black');
+   $text_element->fillcolor($font_color);
+   $text_element->charspace($charspace);
 
    # Check to see if the next rung will fit 
    my ( $endw, $ypos, $paragraph ) = text_block(
@@ -260,7 +269,7 @@ sub add_blob {
       if ($font_key eq '') { $font_key = 'Roman'; }
 
       $text_element->font( $fonts->{$font}{$font_key}, $self->{font_size} );
-      $text_element->fillcolor('black');
+      $text_element->fillcolor($font_color);
    }
 
    my ( $endw, $ypos, $paragraph ) = text_block(
